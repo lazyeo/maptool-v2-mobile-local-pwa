@@ -155,7 +155,7 @@ button {
 
 #search-clear {
   position: absolute;
-  right: 10px;
+  right: 44px;
   top: 50%;
   transform: translateY(-50%);
   width: 28px;
@@ -1383,7 +1383,7 @@ body.is-drawing #fab-edit {
 /* Camera icon button in search bar */
 #btn-camera {
   position: absolute;
-  right: 40px;
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
