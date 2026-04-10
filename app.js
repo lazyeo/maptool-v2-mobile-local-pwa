@@ -301,13 +301,26 @@
 
     map.dragging.enable();
 
-    // Refresh vertex handles on the specific dragged layer so handles
-    // move to the new position instead of staying at the original coords.
-    if (layer.editing && layer.editing.enabled()) {
-      layer.editing.disable();
-      layer.editing.enable();
-    } else if (editModeActive && layer.editing) {
-      layer.editing.enable();
+    // Rebuild vertex handles at the new polygon position.
+    // updateMarkers() = clearLayers() + _initMarkers() — reads fresh latlngs.
+    // disable+enable alone won't work: addHooks() skips _initMarkers() if
+    // _markerGroup already exists, so handles stay at the pre-drag coords.
+    if (layer.editing) {
+      if (layer.editing.enabled()) {
+        if (typeof layer.editing.updateMarkers === 'function') {
+          layer.editing.updateMarkers();
+        } else {
+          // Fallback: nuke _markerGroup so addHooks() is forced to rebuild
+          if (layer.editing._markerGroup) {
+            layer.editing._markerGroup.clearLayers();
+            delete layer.editing._markerGroup;
+          }
+          layer.editing.disable();
+          layer.editing.enable();
+        }
+      } else if (editModeActive) {
+        layer.editing.enable();
+      }
     }
 
     document.removeEventListener('pointermove', _onPolyPointerMove);
