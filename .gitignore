@@ -1,0 +1,35 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.temp
+.vscode/
+.idea/
+
+# Node / package manager
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build / cache
+.dist/
+dist/
+build/
+coverage/
+.cache/
+.parcel-cache/
+.wrangler/
+
+# Env / secrets
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+
+# Runtime exports
+*.zip
+*.tgz

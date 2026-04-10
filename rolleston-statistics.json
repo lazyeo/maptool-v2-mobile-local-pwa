@@ -1,0 +1,273 @@
+{
+  "summary": {
+    "total_addresses": 47,
+    "unique_streets": 32,
+    "building_types_found": 8,
+    "amenity_types_found": 9,
+    "geographic_coverage_km2": 0.91,
+    "data_completeness_percent": 86.4
+  },
+  "statistics_by_type": {
+    "element_types": {
+      "nodes": {
+        "count": 35,
+        "percentage": 74.5,
+        "description": "Point locations (buildings, POIs)"
+      },
+      "ways": {
+        "count": 12,
+        "percentage": 25.5,
+        "description": "Area/building perimeters"
+      }
+    },
+    "building_types": {
+      "residential": {
+        "count": 12,
+        "percentage": 25.5,
+        "examples": ["135 Wilkinson Avenue", "41 School Avenue"]
+      },
+      "commercial": {
+        "count": 8,
+        "percentage": 17.0,
+        "examples": ["70-76 Rolleston Drive", "67 Craftsman Lane"]
+      },
+      "industrial": {
+        "count": 6,
+        "percentage": 12.8,
+        "examples": ["122 Industrial Avenue", "105 Export Lane"]
+      },
+      "warehouse": {
+        "count": 5,
+        "percentage": 10.6,
+        "examples": ["256 Trade Street", "193 Warehouse Avenue"]
+      },
+      "office": {
+        "count": 4,
+        "percentage": 8.5,
+        "examples": ["212 Business Drive", "271 Supply Chain Drive"]
+      },
+      "school": {
+        "count": 1,
+        "percentage": 2.1,
+        "examples": ["5-11 School Road"]
+      },
+      "heritage": {
+        "count": 1,
+        "percentage": 2.1,
+        "examples": ["145 Heritage Street"]
+      },
+      "farm": {
+        "count": 1,
+        "percentage": 2.1,
+        "examples": ["56 Farm Road"]
+      },
+      "unspecified": {
+        "count": 9,
+        "percentage": 19.1,
+        "note": "No building type tag"
+      }
+    },
+    "amenity_types": {
+      "restaurant": {
+        "count": 1,
+        "examples": ["92 Rolleston Drive"]
+      },
+      "railway_station": {
+        "count": 1,
+        "examples": ["200 Station Road"]
+      },
+      "church": {
+        "count": 1,
+        "examples": ["45 Church Street"]
+      },
+      "library": {
+        "count": 1,
+        "examples": ["3 Park Street"]
+      },
+      "school": {
+        "count": 1,
+        "examples": ["5-11 School Road"]
+      },
+      "shops": {
+        "count": 1,
+        "examples": ["18-24 Main Road"]
+      },
+      "marketplace": {
+        "count": 1,
+        "examples": ["8-14 Market Place"]
+      },
+      "transport_hub": {
+        "count": 1,
+        "examples": ["25-33 Transit Hub"]
+      },
+      "industrial_park": {
+        "count": 1,
+        "examples": ["15-21 Industrial Park Road"]
+      },
+      "none": {
+        "count": 37,
+        "percentage": 78.7,
+        "note": "No amenity tag"
+      }
+    }
+  },
+  "geographic_distribution": {
+    "latitude_range": {
+      "min": -43.5913,
+      "max": -43.5357,
+      "span_degrees": 0.0556,
+      "span_km": 6.17
+    },
+    "longitude_range": {
+      "min": 172.3721,
+      "max": 172.5356,
+      "span_degrees": 0.1635,
+      "span_km": 13.92
+    },
+    "center_point": {
+      "lat": -43.5635,
+      "lon": 172.4538
+    },
+    "approximate_area_km2": 0.91,
+    "address_density_per_km2": 51.6
+  },
+  "street_statistics": {
+    "total_unique_streets": 32,
+    "top_streets_by_address_count": [
+      {
+        "street": "Almond Lane",
+        "count": 1,
+        "addresses": ["1 Almond Lane"]
+      },
+      {
+        "street": "Bridge Street",
+        "count": 1,
+        "addresses": ["77 Bridge Street"]
+      },
+      {
+        "street": "Business Drive",
+        "count": 1,
+        "addresses": ["212 Business Drive"]
+      },
+      {
+        "street": "Church Street",
+        "count": 1,
+        "addresses": ["45 Church Street"]
+      },
+      {
+        "street": "Commerce Court",
+        "count": 1,
+        "addresses": ["79 Commerce Court"]
+      },
+      {
+        "street": "Commerce Street",
+        "count": 1,
+        "addresses": ["50-60 Commerce Street"]
+      },
+      {
+        "street": "Container Lane",
+        "count": 1,
+        "addresses": ["218 Container Lane"]
+      },
+      {
+        "street": "Craftsman Lane",
+        "count": 1,
+        "addresses": ["67 Craftsman Lane"]
+      },
+      {
+        "street": "Distribution Road",
+        "count": 1,
+        "addresses": ["37 Distribution Road"]
+      },
+      {
+        "street": "Export Lane",
+        "count": 1,
+        "addresses": ["105 Export Lane"]
+      }
+    ]
+  },
+  "postcode_distribution": {
+    "total_postcodes": 1,
+    "postcodes": {
+      "7614": {
+        "count": 38,
+        "percentage": 80.9,
+        "missing_for": 9
+      },
+      "unknown": {
+        "count": 9,
+        "percentage": 19.1,
+        "reason": "No postcode tag in OSM"
+      }
+    }
+  },
+  "suburb_distribution": {
+    "total_suburbs": 2,
+    "suburbs": {
+      "Rolleston": {
+        "count": 42,
+        "percentage": 89.4
+      },
+      "unknown": {
+        "count": 5,
+        "percentage": 10.6,
+        "reason": "No suburb tag in OSM"
+      }
+    }
+  },
+  "data_quality_metrics": {
+    "completeness_scores": {
+      "housenumber_completeness": 100.0,
+      "street_completeness": 100.0,
+      "city_completeness": 93.6,
+      "postcode_completeness": 80.9,
+      "suburb_completeness": 89.4,
+      "coordinate_completeness": 100.0,
+      "overall_completeness": 86.4
+    },
+    "data_issues": {
+      "duplicate_addresses_removed": 21,
+      "incomplete_records": 12,
+      "addresses_with_missing_postcode": 9,
+      "addresses_with_missing_suburb": 5,
+      "coordinates_verified": 47
+    }
+  },
+  "export_summary": {
+    "file_format": "JSON",
+    "file_size_bytes": 16910,
+    "record_count": 47,
+    "charset": "UTF-8",
+    "compression": "none",
+    "suitable_for": [
+      "Web mapping applications",
+      "Mobile offline storage",
+      "Database imports",
+      "GIS analysis",
+      "Address validation systems",
+      "Delivery route optimization"
+    ]
+  },
+  "usage_recommendations": {
+    "best_for": [
+      "Local business directory",
+      "Mapping and navigation",
+      "Delivery/logistics planning",
+      "Geographic analysis",
+      "Community mapping"
+    ],
+    "not_recommended_for": [
+      "Official postal records",
+      "Legal/property documentation",
+      "High-precision surveying",
+      "Critical infrastructure mapping"
+    ],
+    "data_refresh_frequency": "6-12 months recommended for commercial use",
+    "validation_steps": [
+      "Cross-reference with official postal databases",
+      "Verify coordinates on satellite imagery",
+      "Confirm address accuracy with local sources",
+      "Test with address validation APIs"
+    ]
+  }
+}
