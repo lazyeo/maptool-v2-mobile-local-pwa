@@ -300,7 +300,15 @@
     }
 
     map.dragging.enable();
-    _resumeVertexEdit();        // rebuild vertex markers at new position
+
+    // Refresh vertex handles on the specific dragged layer so handles
+    // move to the new position instead of staying at the original coords.
+    if (layer.editing && layer.editing.enabled()) {
+      layer.editing.disable();
+      layer.editing.enable();
+    } else if (editModeActive && layer.editing) {
+      layer.editing.enable();
+    }
 
     document.removeEventListener('pointermove', _onPolyPointerMove);
     document.removeEventListener('touchmove',   _onPolyPointerMove);
@@ -569,8 +577,8 @@
           <div class="zone-card-actions">
             <button class="zone-edit-btn" data-zone-edit="${z.id}" title="Edit zone">Edit</button>
             <button class="zone-delete" data-zone-delete="${z.id}" title="Delete zone" aria-label="Delete zone">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-                <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M1.75 3.5h10.5M5.25 3.5V2.333a.583.583 0 01.583-.583h2.334a.583.583 0 01.583.583V3.5M11.083 3.5l-.583 8.167H3.5L2.917 3.5M5.833 6.417v3.5M8.167 6.417v3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
           </div>
@@ -646,7 +654,8 @@
         ghostClass: 'sortable-ghost',
         chosenClass: 'sortable-chosen',
         dragClass: 'sortable-drag',
-        forceFallback: false,
+        forceFallback: true,
+        fallbackClass: 'sortable-fallback',
         fallbackTolerance: 5,
         delay: 150,
         delayOnTouchOnly: true,

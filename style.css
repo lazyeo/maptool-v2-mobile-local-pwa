@@ -103,6 +103,7 @@ button {
   right: 0;
   z-index: 1000;
   padding: 12px 14px;
+  padding-top: calc(12px + env(safe-area-inset-top));
   display: flex;
   gap: 10px;
   align-items: center;
@@ -121,7 +122,7 @@ button {
 #search-input {
   width: 100%;
   height: 48px;
-  padding: 0 44px 0 44px;
+  padding: 0 80px 0 44px;
   background: linear-gradient(180deg, rgba(255,252,247,0.92) 0%, rgba(250,244,236,0.86) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
@@ -966,6 +967,10 @@ body.is-drawing #fab-edit {
 .zone-card.sortable-drag {
   opacity: 1 !important;
 }
+.sortable-fallback {
+  opacity: 0.8 !important;
+  transform: scale(1.02) !important;
+}
 
 @media (min-width: 769px) {
   #btn-sidebar-toggle {
@@ -998,6 +1003,7 @@ body.is-drawing #fab-edit {
 
   #search-bar {
     padding: 8px 12px;
+    padding-top: calc(8px + env(safe-area-inset-top));
   }
 
   #search-input {
@@ -1006,7 +1012,7 @@ body.is-drawing #fab-edit {
   }
 
   #fab-container {
-    bottom: calc(var(--drawer-peek) + 20px);
+    bottom: calc(var(--drawer-peek) + 20px + env(safe-area-inset-bottom));
     right: 16px;
     flex-direction: column-reverse;
     align-items: flex-end;
@@ -1080,7 +1086,7 @@ body.is-drawing #fab-edit {
   #drawer-content {
     flex: 1;
     overflow-y: auto;
-    padding: 4px 18px 18px;
+    padding: 4px 18px calc(18px + env(safe-area-inset-bottom));
     -webkit-overflow-scrolling: touch;
   }
 
