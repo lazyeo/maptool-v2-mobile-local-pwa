@@ -1192,8 +1192,8 @@ body.is-drawing #fab-edit {
   font-family: var(--font-body) !important;
   box-shadow: 0 4px 16px rgba(0,0,0,0.14) !important;
   backdrop-filter: blur(10px) !important;
-  white-space: normal !important;
-  max-width: 240px !important;
+  white-space: nowrap !important;
+  max-width: none !important;
   line-height: 1.5 !important;
   pointer-events: none !important;
 }
