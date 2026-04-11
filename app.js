@@ -574,25 +574,31 @@
     if (!zone || !zone.points) return;
     zone.points.forEach((p, i) => {
       const isDone = p.status === 'done';
+      // Done: grey with checkmark. Pending: zone color with number.
       const icon = L.divIcon({
         className: 'point-marker',
         html: `<div style="
-          background:${isDone ? '#9a8b7d' : zone.color};
+          background:${isDone ? '#b0a89e' : zone.color};
           color:#fff;
           border-radius:50%;
-          width:24px;height:24px;
+          width:26px;height:26px;
           display:flex;align-items:center;justify-content:center;
-          font-size:11px;font-weight:700;
-          border:2px solid rgba(255,255,255,0.9);
-          box-shadow:0 2px 6px rgba(0,0,0,0.25);
-          opacity:${isDone ? 0.5 : 1};
-        ">${i + 1}</div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+          font-size:${isDone ? '13px' : '11px'};font-weight:700;
+          border:2.5px solid ${isDone ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.95)'};
+          box-shadow:0 2px 8px rgba(0,0,0,${isDone ? '0.12' : '0.28'});
+          opacity:${isDone ? 0.55 : 1};
+          text-decoration:${isDone ? 'line-through' : 'none'};
+        ">${isDone ? '✓' : i + 1}</div>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13]
       });
-      L.marker([p.lat, p.lng], { icon })
-        .bindTooltip(`${i + 1}. ${p.address}`, { direction: 'top', offset: [0, -14] })
-        .addTo(pointMarkersLayer);
+      const marker = L.marker([p.lat, p.lng], { icon })
+        .bindTooltip(`${isDone ? '✓' : i + 1}. ${p.address}`, { direction: 'top', offset: [0, -16] });
+      // Click: show address card for re-zoning / status editing
+      marker.on('click', () => {
+        selectSearchResult({ lat: p.lat, lon: p.lng, display_name: p.address });
+      });
+      marker.addTo(pointMarkersLayer);
     });
   }
 
@@ -852,7 +858,8 @@
         .map(el => el.dataset.zoneId);
       zones.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
       saveState();
-      renderZoneLists();
+      // Don't call renderZoneLists() — SortableJS already reordered the DOM.
+      // Re-rendering destroys the Sortable instance, breaking subsequent drags.
     });
 
     // ── SortableJS drag-to-reorder (points within each zone) ───

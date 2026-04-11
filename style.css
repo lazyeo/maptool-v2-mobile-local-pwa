@@ -1414,7 +1414,7 @@ body.is-drawing #fab-edit {
   border-radius: 14px;
   padding: 16px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-  z-index: 1200;
+  z-index: 1005; /* below drawer (1010) and sidebar (1001) so lists cover it */
   animation: card-slide-up 0.22s ease;
 }
 @keyframes card-slide-up {
