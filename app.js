@@ -594,9 +594,10 @@
       });
       const marker = L.marker([p.lat, p.lng], { icon })
         .bindTooltip(`${isDone ? '✓' : i + 1}. ${p.address}`, { direction: 'top', offset: [0, -16] });
-      // Click: show address card for re-zoning / status editing
+      // Click: show address card only (don't re-place search pin — avoids double bubble)
       marker.on('click', () => {
-        selectSearchResult({ lat: p.lat, lon: p.lng, display_name: p.address });
+        const zone = zones.find(z => z.id === zoneId);
+        showAddressCard(p.address, p.lat, p.lng, zone);
       });
       marker.addTo(pointMarkersLayer);
     });
@@ -846,8 +847,9 @@
         if (!zone) return;
         const point = zone.points.find(p => p.id === this.dataset.pointId);
         if (!point) return;
-        // Place marker, flyTo, and show address card
-        selectSearchResult({ lat: point.lat, lon: point.lng, display_name: point.address });
+        // FlyTo the point, then show address card (don't re-place search pin)
+        map.setView([point.lat, point.lng], Math.max(map.getZoom(), 16));
+        showAddressCard(point.address, point.lat, point.lng, zone);
         if (isMobile) setDrawerOpen(false);
       });
     });
@@ -1099,7 +1101,15 @@
   let _cardPending = null; // { address, lat, lng, zone }
 
   function showAddressCard(address, lat, lng, detectedZone) {
-    _cardPending = { address, lat, lng, zone: detectedZone };
+    // Check if this address already exists in any zone
+    let existingZone = null;
+    let existingPoint = null;
+    for (const z of zones) {
+      const p = (z.points || []).find(pt => pt.address === address);
+      if (p) { existingZone = z; existingPoint = p; break; }
+    }
+
+    _cardPending = { address, lat, lng, zone: detectedZone, existingZone, existingPoint };
 
     const card = document.getElementById('address-card');
     document.getElementById('address-card-text').textContent = address;
@@ -1108,21 +1118,35 @@
     const nameEl = document.getElementById('address-card-zone-name');
     const selectRow = document.getElementById('address-card-select-row');
     const addBtn = document.getElementById('btn-card-add');
+    const changeBtn = document.getElementById('btn-card-change-zone');
 
     selectRow.style.display = 'none';
 
-    if (detectedZone) {
+    if (existingZone) {
+      // Already added — show edit/remove mode
+      dot.style.background = existingZone.color;
+      nameEl.textContent = `In: ${existingZone.name} (${existingPoint.status === 'done' ? 'Done' : 'Pending'})`;
+      nameEl.style.color = existingZone.color;
+      addBtn.textContent = 'Move to Another Zone';
+      addBtn.disabled = false;
+      changeBtn.textContent = 'Remove from Zone';
+      changeBtn.dataset.removeMode = '1';
+    } else if (detectedZone) {
       dot.style.background = detectedZone.color;
       nameEl.textContent = detectedZone.name;
       nameEl.style.color = detectedZone.color;
       addBtn.textContent = `Add to ${detectedZone.name}`;
       addBtn.disabled = false;
+      changeBtn.textContent = 'Change Zone';
+      delete changeBtn.dataset.removeMode;
     } else {
       dot.style.background = '#9a8b7d';
       nameEl.textContent = 'Not in any zone';
       nameEl.style.color = 'var(--text-muted)';
       addBtn.textContent = 'Add to Zone';
       addBtn.disabled = zones.length === 0;
+      changeBtn.textContent = 'Change Zone';
+      delete changeBtn.dataset.removeMode;
       if (zones.length > 0) _showZoneSelect();
     }
 
@@ -1144,20 +1168,54 @@
     _cardPending = null;
   }
 
-  document.getElementById('btn-card-change-zone').addEventListener('click', _showZoneSelect);
+  document.getElementById('btn-card-change-zone').addEventListener('click', function () {
+    if (this.dataset.removeMode === '1' && _cardPending && _cardPending.existingZone) {
+      // Remove point from its zone
+      const z = _cardPending.existingZone;
+      z.points = z.points.filter(p => p.id !== _cardPending.existingPoint.id);
+      saveState();
+      renderZoneLists();
+      showZonePointMarkers(z.id); // refresh markers
+      toast(`Removed from ${z.name}`, 'warning');
+      hideAddressCard();
+    } else {
+      _showZoneSelect();
+    }
+  });
 
   document.getElementById('btn-card-add').addEventListener('click', function () {
     if (!_cardPending) return;
     const sel = document.getElementById('address-card-zone-select');
     const row = document.getElementById('address-card-select-row');
+    const isMove = !!_cardPending.existingZone;
+
     let targetZone;
     if (row.style.display !== 'none') {
       targetZone = zones.find(z => z.id === sel.value);
     } else {
       targetZone = _cardPending.zone;
     }
-    if (!targetZone) { toast('Select a zone first', 'warning'); return; }
 
+    if (isMove) {
+      // Clicking "Move to Another Zone" — need zone select
+      if (row.style.display === 'none') { _showZoneSelect(); return; }
+      if (!targetZone) { toast('Select a zone first', 'warning'); return; }
+      if (targetZone.id === _cardPending.existingZone.id) {
+        toast('Already in this zone', 'warning'); return;
+      }
+      // Remove from old zone, preserve status
+      const oldPoint = _cardPending.existingPoint;
+      _cardPending.existingZone.points = _cardPending.existingZone.points.filter(p => p.id !== oldPoint.id);
+      targetZone.points.push({ ...oldPoint, id: generateId() });
+      saveState();
+      renderZoneLists();
+      showZonePointMarkers(targetZone.id);
+      toast(`Moved to ${targetZone.name}`, 'success');
+      hideAddressCard();
+      return;
+    }
+
+    if (!targetZone) { toast('Select a zone first', 'warning'); return; }
     const point = {
       id: generateId(),
       address: _cardPending.address,
