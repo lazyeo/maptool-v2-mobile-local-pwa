@@ -1401,3 +1401,145 @@ body.is-drawing #fab-edit {
   color: var(--text-secondary);
   background: rgba(46,33,23,0.07);
 }
+
+/* ── Address Card ─────────────────────────────────────────────── */
+#address-card {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 100px;
+  width: min(92vw, 420px);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  z-index: 1200;
+  animation: card-slide-up 0.22s ease;
+}
+@keyframes card-slide-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+#address-card-text {
+  font-weight: 600;
+  font-size: 13pt;
+  margin-bottom: 8px;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+#address-card-zone-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 10.5pt;
+  color: var(--text-muted);
+}
+.zone-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+#address-card-select-row {
+  margin-bottom: 10px;
+  font-size: 10pt;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#address-card-zone-select {
+  flex: 1;
+  font-size: 10pt;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+#address-card-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* ── Zone card header (updated layout) ───────────────────────── */
+.zone-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+/* Unified drag handle (zones + points) */
+.drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  padding: 0 6px 0 2px;
+  min-width: 24px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.45;
+  transition: opacity 0.15s;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  font-size: 14px;
+}
+.drag-handle:active { cursor: grabbing; opacity: 0.9; }
+.zone-card:hover .drag-handle, .point-item:hover .drag-handle { opacity: 0.75; }
+
+/* ── Point list ───────────────────────────────────────────────── */
+.point-list { padding: 0 4px 8px 28px; }
+.point-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10pt;
+}
+.point-item.done .point-address {
+  text-decoration: line-through;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+.point-address { flex: 1; line-height: 1.3; }
+.point-check { flex-shrink: 0; }
+.btn-point-done, .btn-point-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.btn-point-done:hover { color: #4a7c59; background: #edf5f0; }
+.btn-point-remove:hover { color: #c0392b; background: #fdf0ef; }
+.zone-point-count {
+  font-size: 9pt;
+  color: var(--text-muted);
+  margin-left: auto;
+  margin-right: 6px;
+}
+.zone-expand-arrow {
+  font-size: 10pt;
+  color: var(--text-muted);
+  transition: transform 0.18s;
+  flex-shrink: 0;
+}
+.zone-card.expanded .zone-expand-arrow { transform: rotate(90deg); }
+.point-list-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0 4px;
+  flex-wrap: wrap;
+}

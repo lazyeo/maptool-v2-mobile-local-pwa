@@ -16,7 +16,7 @@
   // ════════════════════════════════════════════════
   //  STATE
   // ════════════════════════════════════════════════
-  let zones = [];          // { id, name, notes, color, latlngs, matchCount }
+  let zones = [];          // { id, name, notes, color, latlngs, points: [] }
   let colorIndex = 0;
   let pendingLayer = null;
   let pendingColor = COLORS[0];
@@ -52,6 +52,32 @@
 
   function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  }
+
+  function isTouchPrimary() {
+    return navigator.maxTouchPoints > 0 && window.matchMedia('(hover: none)').matches;
+  }
+
+  function createSortable(el, onEnd) {
+    if (typeof Sortable === 'undefined') return null;
+    return Sortable.create(el, {
+      animation: 150,
+      handle: '.drag-handle',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      dragClass: 'sortable-drag',
+      forceFallback: isTouchPrimary(),
+      fallbackTolerance: 3,
+      delay: isTouchPrimary() ? 120 : 0,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 3,
+      onStart: () => { if (el.closest('#drawer')) el.closest('#drawer').dataset.sortDragging = '1'; },
+      onEnd: (evt) => {
+        const drawer = el.closest('#drawer');
+        if (drawer) delete drawer.dataset.sortDragging;
+        onEnd(evt);
+      }
+    });
   }
 
   // ════════════════════════════════════════════════
@@ -575,36 +601,79 @@
       return;
     }
 
-    container.innerHTML = zones.map(z => `
-      <div class="zone-card ${selectedZoneId === z.id ? 'selected' : ''}" data-zone-id="${z.id}">
-        <div class="zone-card-top">
-          <span class="zone-drag-handle" title="Drag to reorder">
-            <svg width="10" height="14" viewBox="0 0 10 14" fill="none" aria-hidden="true">
-              <circle cx="3" cy="2.5" r="1.2" fill="currentColor"/><circle cx="7" cy="2.5" r="1.2" fill="currentColor"/>
-              <circle cx="3" cy="7" r="1.2" fill="currentColor"/><circle cx="7" cy="7" r="1.2" fill="currentColor"/>
-              <circle cx="3" cy="11.5" r="1.2" fill="currentColor"/><circle cx="7" cy="11.5" r="1.2" fill="currentColor"/>
-            </svg>
-          </span>
-          <div class="zone-color-dot" style="background:${z.color}"></div>
-          <div class="zone-name" data-zone-id="${z.id}">${escapeHtml(z.name)}</div>
-          <div class="zone-card-actions">
-            <button class="zone-edit-btn" data-zone-edit="${z.id}" title="Edit zone">Edit</button>
-            <button class="zone-delete" data-zone-delete="${z.id}" title="Delete zone" aria-label="Delete zone">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M1.75 3.5h10.5M5.25 3.5V2.333a.583.583 0 01.583-.583h2.334a.583.583 0 01.583.583V3.5M11.083 3.5l-.583 8.167H3.5L2.917 3.5M5.833 6.417v3.5M8.167 6.417v3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    // Remember which zones are currently expanded so we can restore after re-render
+    const expandedIds = new Set(
+      Array.from(container.querySelectorAll('.zone-card.expanded')).map(el => el.dataset.zoneId)
+    );
+
+    container.innerHTML = zones.map(z => {
+      const pendingCount = (z.points || []).filter(p => p.status !== 'done').length;
+      const totalCount = (z.points || []).length;
+      const countLabel = totalCount > 0 ? `${pendingCount} pending` : '';
+      const isExpanded = expandedIds.has(z.id);
+
+      const pointsHtml = (z.points || []).map(p => `
+        <div class="point-item${p.status === 'done' ? ' done' : ''}" data-point-id="${p.id}" data-zone-id="${z.id}">
+          <span class="drag-handle" title="Drag to reorder">⠿</span>
+          <input type="checkbox" class="point-check" data-point-id="${p.id}">
+          <span class="point-address">${escapeHtml(p.address)}</span>
+          <button class="btn-point-done" data-point-id="${p.id}" data-zone-id="${z.id}" title="Mark delivered">✓</button>
+          <button class="btn-point-remove" data-point-id="${p.id}" data-zone-id="${z.id}" title="Remove">✕</button>
+        </div>
+      `).join('');
+
+      return `
+        <div class="zone-card ${selectedZoneId === z.id ? 'selected' : ''} ${isExpanded ? 'expanded' : ''}" data-zone-id="${z.id}">
+          <div class="zone-card-header">
+            <span class="drag-handle" title="Drag to reorder">
+              <svg width="10" height="14" viewBox="0 0 10 14" fill="none" aria-hidden="true">
+                <circle cx="3" cy="2.5" r="1.2" fill="currentColor"/><circle cx="7" cy="2.5" r="1.2" fill="currentColor"/>
+                <circle cx="3" cy="7" r="1.2" fill="currentColor"/><circle cx="7" cy="7" r="1.2" fill="currentColor"/>
+                <circle cx="3" cy="11.5" r="1.2" fill="currentColor"/><circle cx="7" cy="11.5" r="1.2" fill="currentColor"/>
               </svg>
-            </button>
+            </span>
+            <div class="zone-color-dot" style="background:${z.color}"></div>
+            <div class="zone-name" data-zone-id="${z.id}">${escapeHtml(z.name)}</div>
+            ${countLabel ? `<span class="zone-point-count">${escapeHtml(countLabel)}</span>` : ''}
+            <div class="zone-card-actions">
+              <button class="zone-edit-btn" data-zone-edit="${z.id}" title="Edit zone">Edit</button>
+              <button class="zone-delete" data-zone-delete="${z.id}" title="Delete zone" aria-label="Delete zone">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M1.75 3.5h10.5M5.25 3.5V2.333a.583.583 0 01.583-.583h2.334a.583.583 0 01.583.583V3.5M11.083 3.5l-.583 8.167H3.5L2.917 3.5M5.833 6.417v3.5M8.167 6.417v3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+            ${totalCount > 0 ? `<span class="zone-expand-arrow">▸</span>` : ''}
+          </div>
+          ${z.notes ? `<div class="zone-notes-preview">${escapeHtml(z.notes)}</div>` : ''}
+          <div class="point-list" data-point-list="${z.id}" style="display:${isExpanded ? 'block' : 'none'}">
+            <div class="point-list-actions">
+              <button class="btn btn-sm btn-nav" data-zone-id="${z.id}">Navigate Selected</button>
+              <button class="btn btn-sm btn-clear-done" data-zone-id="${z.id}">Clear Done</button>
+            </div>
+            ${pointsHtml}
           </div>
         </div>
-        ${z.notes ? `<div class="zone-notes-preview">${escapeHtml(z.notes)}</div>` : ''}
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
-    // Event delegation
-    container.querySelectorAll('.zone-card').forEach(card => {
-      card.addEventListener('click', function (e) {
+    // ── Zone card header click: focus zone + toggle expand ──────
+    container.querySelectorAll('.zone-card-header').forEach(header => {
+      header.addEventListener('click', function (e) {
         if (e.target.closest('.zone-delete') || e.target.closest('.zone-edit-btn')) return;
-        focusZone(this.dataset.zoneId);
+        const card = this.closest('.zone-card');
+        const zoneId = card.dataset.zoneId;
+        const zone = zones.find(z => z.id === zoneId);
+
+        // Focus the zone on the map
+        focusZone(zoneId);
+
+        // Toggle expand if zone has points
+        if (zone && zone.points && zone.points.length > 0) {
+          const pointList = card.querySelector('.point-list');
+          const isNowExpanded = card.classList.toggle('expanded');
+          if (pointList) pointList.style.display = isNowExpanded ? 'block' : 'none';
+        }
       });
     });
 
@@ -624,7 +693,8 @@
 
     // Double-click zone name to rename inline
     container.querySelectorAll('.zone-name').forEach(nameEl => {
-      nameEl.addEventListener('dblclick', function () {
+      nameEl.addEventListener('dblclick', function (e) {
+        e.stopPropagation();
         const zoneId = this.dataset.zoneId;
         const zone = zones.find(z => z.id === zoneId);
         if (!zone) return;
@@ -659,35 +729,71 @@
       });
     });
 
-    // ── SortableJS drag-to-reorder ──────────────────────────────
-    if (typeof Sortable !== 'undefined') {
-      Sortable.create(container, {
-        animation: 150,
-        handle: '.zone-drag-handle',
-        ghostClass: 'sortable-ghost',
-        chosenClass: 'sortable-chosen',
-        dragClass: 'sortable-drag',
-        forceFallback: true,
-        fallbackClass: 'sortable-fallback',
-        fallbackTolerance: 5,
-        delay: 150,
-        delayOnTouchOnly: true,
-        touchStartThreshold: 3,
-        preventOnFilter: true,
-        onStart: function () {
-          // Tell drawer swipe handler to stand down while a sort drag is live
-          if (drawer) drawer.dataset.sortDragging = '1';
-        },
-        onEnd: function (evt) {
-          if (drawer) delete drawer.dataset.sortDragging;
-          const newOrder = Array.from(container.querySelectorAll('.zone-card'))
-            .map(el => el.dataset.zoneId);
-          zones.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
-          saveState();
-          renderZoneLists();
-        }
+    // ── Point action buttons ──────────────────────────────────
+    container.querySelectorAll('.btn-point-done').forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const zone = zones.find(z => z.id === this.dataset.zoneId);
+        if (!zone) return;
+        const point = zone.points.find(p => p.id === this.dataset.pointId);
+        if (!point) return;
+        point.status = point.status === 'done' ? 'pending' : 'done';
+        saveState();
+        renderZoneLists();
       });
-    }
+    });
+
+    container.querySelectorAll('.btn-point-remove').forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const zone = zones.find(z => z.id === this.dataset.zoneId);
+        if (!zone) return;
+        zone.points = zone.points.filter(p => p.id !== this.dataset.pointId);
+        saveState();
+        renderZoneLists();
+      });
+    });
+
+    container.querySelectorAll('.btn-nav').forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        navigateSelected(this.dataset.zoneId);
+      });
+    });
+
+    container.querySelectorAll('.btn-clear-done').forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const zone = zones.find(z => z.id === this.dataset.zoneId);
+        if (!zone) return;
+        zone.points = zone.points.filter(p => p.status !== 'done');
+        saveState();
+        renderZoneLists();
+        toast('Cleared done points', 'success');
+      });
+    });
+
+    // ── SortableJS drag-to-reorder (zones) ─────────────────────
+    createSortable(container, (evt) => {
+      const newOrder = Array.from(container.querySelectorAll('.zone-card'))
+        .map(el => el.dataset.zoneId);
+      zones.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
+      saveState();
+      renderZoneLists();
+    });
+
+    // ── SortableJS drag-to-reorder (points within each zone) ───
+    container.querySelectorAll('.point-list').forEach(pointListEl => {
+      const zoneId = pointListEl.dataset.pointList;
+      createSortable(pointListEl, (evt) => {
+        const zone = zones.find(z => z.id === zoneId);
+        if (!zone) return;
+        const newOrder = Array.from(pointListEl.querySelectorAll('.point-item'))
+          .map(el => el.dataset.pointId);
+        zone.points.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
+        saveState();
+      });
+    });
     // ────────────────────────────────────────────────────────────
   }
 
@@ -886,13 +992,7 @@
     marker.openPopup();
     map.setView([lat, lng], Math.max(map.getZoom(), 15));
 
-    if (zone) {
-      zone.matchCount++;
-      saveState();
-      renderZoneLists();
-    }
-
-    showResultBanner(address, zone);
+    showAddressCard(address, lat, lng, zone);
     toast(zone ? `Matched: ${zone.name}` : 'Not in any zone', zone ? 'success' : 'warning');
 
     if (isMobile) {
@@ -903,24 +1003,130 @@
   }
 
   // ════════════════════════════════════════════════
-  //  RESULT BANNER
+  //  RESULT BANNER (kept for backward compat, hidden by address card)
   // ════════════════════════════════════════════════
   function showResultBanner(address, zone) {
-    const banner = document.getElementById('zone-result-banner');
-    const shortAddr = address.length > 50 ? address.substring(0, 47) + '…' : address;
+    // Now replaced by showAddressCard; this is a no-op kept to avoid reference errors
+  }
 
-    if (zone) {
-      banner.className = 'in-zone';
-      banner.innerHTML = `${escapeHtml(shortAddr)} — <span style="color:${zone.color};font-weight:700">${escapeHtml(zone.name)}</span>`;
+  // ════════════════════════════════════════════════
+  //  ADDRESS CARD
+  // ════════════════════════════════════════════════
+  let _cardPending = null; // { address, lat, lng, zone }
+
+  function showAddressCard(address, lat, lng, detectedZone) {
+    _cardPending = { address, lat, lng, zone: detectedZone };
+
+    const card = document.getElementById('address-card');
+    document.getElementById('address-card-text').textContent = address;
+
+    const dot = document.getElementById('address-card-zone-dot');
+    const nameEl = document.getElementById('address-card-zone-name');
+    const selectRow = document.getElementById('address-card-select-row');
+    const addBtn = document.getElementById('btn-card-add');
+
+    selectRow.style.display = 'none';
+
+    if (detectedZone) {
+      dot.style.background = detectedZone.color;
+      nameEl.textContent = detectedZone.name;
+      nameEl.style.color = detectedZone.color;
+      addBtn.textContent = `Add to ${detectedZone.name}`;
+      addBtn.disabled = false;
     } else {
-      banner.className = 'no-zone';
-      banner.textContent = `${shortAddr} — Not in any zone`;
+      dot.style.background = '#9a8b7d';
+      nameEl.textContent = 'Not in any zone';
+      nameEl.style.color = 'var(--text-muted)';
+      addBtn.textContent = 'Add to Zone';
+      addBtn.disabled = zones.length === 0;
+      if (zones.length > 0) _showZoneSelect();
     }
 
-    banner.style.display = 'block';
+    card.style.display = 'block';
+  }
 
-    clearTimeout(banner._timer);
-    banner._timer = setTimeout(() => { banner.style.display = 'none'; }, 6000);
+  function _showZoneSelect() {
+    const row = document.getElementById('address-card-select-row');
+    const sel = document.getElementById('address-card-zone-select');
+    sel.innerHTML = zones.map(z => `<option value="${z.id}">${escapeHtml(z.name)}</option>`).join('');
+    if (_cardPending && _cardPending.zone) {
+      sel.value = _cardPending.zone.id;
+    }
+    row.style.display = 'flex';
+  }
+
+  function hideAddressCard() {
+    document.getElementById('address-card').style.display = 'none';
+    _cardPending = null;
+  }
+
+  document.getElementById('btn-card-change-zone').addEventListener('click', _showZoneSelect);
+
+  document.getElementById('btn-card-add').addEventListener('click', function () {
+    if (!_cardPending) return;
+    const sel = document.getElementById('address-card-zone-select');
+    const row = document.getElementById('address-card-select-row');
+    let targetZone;
+    if (row.style.display !== 'none') {
+      targetZone = zones.find(z => z.id === sel.value);
+    } else {
+      targetZone = _cardPending.zone;
+    }
+    if (!targetZone) { toast('Select a zone first', 'warning'); return; }
+
+    const point = {
+      id: generateId(),
+      address: _cardPending.address,
+      lat: _cardPending.lat,
+      lng: _cardPending.lng,
+      status: 'pending',
+      addedAt: Date.now()
+    };
+    targetZone.points.push(point);
+    saveState();
+    renderZoneLists();
+    toast(`Added to ${targetZone.name}`, 'success');
+    hideAddressCard();
+  });
+
+  document.getElementById('btn-card-dismiss').addEventListener('click', hideAddressCard);
+
+  // ════════════════════════════════════════════════
+  //  GOOGLE MAPS NAVIGATION
+  // ════════════════════════════════════════════════
+  function navigateSelected(zoneId) {
+    const zone = zones.find(z => z.id === zoneId);
+    if (!zone) return;
+
+    // Get checked points in display order
+    const container = document.querySelector(`[data-point-list="${zoneId}"]`);
+    let selectedIds;
+    if (container) {
+      const checked = Array.from(container.querySelectorAll('.point-check:checked'));
+      selectedIds = checked.map(cb => cb.dataset.pointId);
+    }
+
+    const points = selectedIds && selectedIds.length > 0
+      ? selectedIds.map(id => zone.points.find(p => p.id === id)).filter(Boolean)
+      : zone.points.filter(p => p.status === 'pending');
+
+    if (points.length === 0) { toast('No points to navigate', 'warning'); return; }
+
+    const BATCH = 10;
+    if (points.length > BATCH) {
+      toast(`${points.length} points — opening first ${BATCH}. Navigate rest after.`, 'info');
+    }
+
+    const batch = points.slice(0, BATCH);
+    const origin = encodeURIComponent(batch[0].address + ', New Zealand');
+    const destination = encodeURIComponent(batch[batch.length - 1].address + ', New Zealand');
+    const waypoints = batch.slice(1, -1).map(p => encodeURIComponent(p.address + ', New Zealand')).join('|');
+
+    let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+    if (waypoints) url += `&waypoints=${waypoints}`;
+    url += '&travelmode=driving';
+
+    window.open(url, '_blank');
   }
 
   // ════════════════════════════════════════════════
@@ -998,7 +1204,7 @@
       notes: modalNotes.value.trim(),
       color: modalSelectedColor,
       latlngs: latlngs,
-      matchCount: 0
+      points: []
     };
 
     // Advance colorIndex so next zone auto-picks the next colour
@@ -1111,8 +1317,9 @@
             let added = 0;
             data.zones.forEach(z => {
               if (!zones.find(existing => existing.id === z.id)) {
-                // Ensure notes field exists for compatibility
+                // Ensure notes + points fields exist for compatibility
                 if (!z.notes) z.notes = '';
+                if (!z.points) z.points = [];
                 zones.push(z);
                 addZoneToMap(z);
                 added++;
@@ -1141,6 +1348,7 @@
     drawnItems.clearLayers();
     markerLayer.clearLayers();
     document.getElementById('zone-result-banner').style.display = 'none';
+    hideAddressCard();
     saveState();
     renderZoneLists();
     toast('All zones cleared', 'warning');
@@ -1159,7 +1367,7 @@
       if (raw) {
         const data = JSON.parse(raw);
         if (data.zones) {
-          zones = data.zones.map(z => ({ notes: '', ...z })); // ensure notes field
+          zones = data.zones.map(z => { const migrated = { notes: '', ...z }; if (!migrated.points) migrated.points = []; delete migrated.matchCount; return migrated; }); // migrate: ensure notes + points, drop matchCount
           colorIndex = data.colorIndex || zones.length;
           zones.forEach(z => addZoneToMap(z));
           return true;
@@ -1187,7 +1395,7 @@
           [-43.5870, 172.3900],
           [-43.5870, 172.3580]
         ],
-        matchCount: 0
+        points: []
       },
       {
         id: 'demo-rolleston-south',
@@ -1200,7 +1408,7 @@
           [-43.6050, 172.3850],
           [-43.6050, 172.3580]
         ],
-        matchCount: 0
+        points: []
       },
       {
         id: 'demo-faringdon',
@@ -1213,7 +1421,7 @@
           [-43.5920, 172.3790],
           [-43.5920, 172.3620]
         ],
-        matchCount: 0
+        points: []
       },
       {
         id: 'demo-izone',
@@ -1226,7 +1434,7 @@
           [-43.5960, 172.4080],
           [-43.5960, 172.3900]
         ],
-        matchCount: 0
+        points: []
       }
     ];
 
@@ -1291,7 +1499,7 @@
       if (drawer.dataset.sortDragging) return; // sort drag in progress, ignore
       // Only initiate swipe if touch starts on the handle or non-interactive area
       const tgt = e.target;
-      if (tgt.closest('.zone-drag-handle') || tgt.closest('.zone-card-actions')) return;
+      if (tgt.closest('.zone-drag-handle') || tgt.closest('.drag-handle') || tgt.closest('.zone-card-actions')) return;
       touchStartY = e.touches[0].clientY;
     }, { passive: true });
 
