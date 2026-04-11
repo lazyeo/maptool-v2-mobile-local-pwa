@@ -840,8 +840,8 @@
         if (!zone) return;
         const point = zone.points.find(p => p.id === this.dataset.pointId);
         if (!point) return;
-        // Place marker and flyTo
-        placePin(point.address, point.lat, point.lng);
+        // Place marker, flyTo, and show address card
+        selectSearchResult({ lat: point.lat, lon: point.lng, display_name: point.address });
         if (isMobile) setDrawerOpen(false);
       });
     });
@@ -865,7 +865,11 @@
           .map(el => el.dataset.pointId);
         zone.points.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
         saveState();
-      }, { filter: '.point-list-actions', preventOnFilter: true });
+      }, {
+        draggable: '.point-item',   // only .point-item elements are draggable targets
+        filter: '.point-list-actions',
+        preventOnFilter: true
+      });
     });
     // ────────────────────────────────────────────────────────────
   }
@@ -1567,22 +1571,27 @@
   // Drawer swipe gesture
   let touchStartY = 0;
   let touchDeltaY = 0;
+  let drawerSwipeActive = false;
   if (drawer) {
     drawer.addEventListener('touchstart', function (e) {
-      if (drawer.dataset.sortDragging) return; // sort drag in progress, ignore
-      // Only initiate swipe if touch starts on the handle or non-interactive area
+      drawerSwipeActive = false;
+      if (drawer.dataset.sortDragging) return;
       const tgt = e.target;
-      if (tgt.closest('.zone-drag-handle') || tgt.closest('.drag-handle') || tgt.closest('.zone-card-actions')) return;
+      // Don't intercept touches on drag handles, buttons, inputs, or interactive elements
+      if (tgt.closest('.drag-handle') || tgt.closest('.zone-drag-handle') ||
+          tgt.closest('.zone-card-actions') || tgt.closest('button') ||
+          tgt.closest('input') || tgt.closest('select')) return;
       touchStartY = e.touches[0].clientY;
+      drawerSwipeActive = true;
     }, { passive: true });
 
     drawer.addEventListener('touchmove', function (e) {
-      if (drawer.dataset.sortDragging || !touchStartY) return;
+      if (!drawerSwipeActive || drawer.dataset.sortDragging || !touchStartY) return;
       touchDeltaY = e.touches[0].clientY - touchStartY;
     }, { passive: true });
 
     drawer.addEventListener('touchend', function () {
-      if (drawer.dataset.sortDragging) return;
+      if (!drawerSwipeActive || drawer.dataset.sortDragging) return;
       if (touchDeltaY < -40) {
         setDrawerOpen(true);
       } else if (touchDeltaY > 60) { // raised threshold to reduce accidental closes
