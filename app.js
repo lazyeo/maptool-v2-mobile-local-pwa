@@ -34,6 +34,7 @@
   // Edit sheet state
   let editingZoneId = null;
   let editSelectedColor = COLORS[0];
+  let expandedZoneIds = new Set(); // persists across renderZoneLists() calls
 
   // ════════════════════════════════════════════════
   //  UTILITY
@@ -58,7 +59,7 @@
     return navigator.maxTouchPoints > 0 && window.matchMedia('(hover: none)').matches;
   }
 
-  function createSortable(el, onEnd) {
+  function createSortable(el, onEnd, extraOpts = {}) {
     if (typeof Sortable === 'undefined') return null;
     return Sortable.create(el, {
       animation: 150,
@@ -71,6 +72,7 @@
       delay: isTouchPrimary() ? 120 : 0,
       delayOnTouchOnly: true,
       touchStartThreshold: 3,
+      ...extraOpts,
       onStart: () => { if (el.closest('#drawer')) el.closest('#drawer').dataset.sortDragging = '1'; },
       onEnd: (evt) => {
         const drawer = el.closest('#drawer');
@@ -130,6 +132,10 @@
 
   const markerLayer = new L.FeatureGroup();
   map.addLayer(markerLayer);
+
+  // Separate layer for zone point markers (shown when a zone is expanded)
+  const pointMarkersLayer = new L.FeatureGroup();
+  map.addLayer(pointMarkersLayer);
 
   // ════════════════════════════════════════════════
   //  LEAFLET DRAW — hidden toolbar, custom button
@@ -520,7 +526,10 @@
 
   function selectZone(id) {
     selectedZoneId = id;
-    renderZoneLists();
+    // Update selected styling on zone cards without full re-render
+    document.querySelectorAll('.zone-card').forEach(card => {
+      card.classList.toggle('selected', card.dataset.zoneId === id);
+    });
 
     const zone = zones.find(z => z.id === id);
     if (zone) {
@@ -544,6 +553,8 @@
       if (layer._zoneId === id) drawnItems.removeLayer(layer);
     });
     if (selectedZoneId === id) selectedZoneId = null;
+    expandedZoneIds.delete(id);
+    pointMarkersLayer.clearLayers();
     saveState();
     renderZoneLists();
     toast('Zone deleted', 'warning');
@@ -554,6 +565,35 @@
     if (isMobile) {
       setDrawerOpen(false);
     }
+  }
+
+  function showZonePointMarkers(zoneId) {
+    pointMarkersLayer.clearLayers();
+    if (!zoneId) return;
+    const zone = zones.find(z => z.id === zoneId);
+    if (!zone || !zone.points) return;
+    zone.points.forEach((p, i) => {
+      const isDone = p.status === 'done';
+      const icon = L.divIcon({
+        className: 'point-marker',
+        html: `<div style="
+          background:${isDone ? '#9a8b7d' : zone.color};
+          color:#fff;
+          border-radius:50%;
+          width:24px;height:24px;
+          display:flex;align-items:center;justify-content:center;
+          font-size:11px;font-weight:700;
+          border:2px solid rgba(255,255,255,0.9);
+          box-shadow:0 2px 6px rgba(0,0,0,0.25);
+          opacity:${isDone ? 0.5 : 1};
+        ">${i + 1}</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+      L.marker([p.lat, p.lng], { icon })
+        .bindTooltip(`${i + 1}. ${p.address}`, { direction: 'top', offset: [0, -14] })
+        .addTo(pointMarkersLayer);
+    });
   }
 
   // ════════════════════════════════════════════════
@@ -601,22 +641,19 @@
       return;
     }
 
-    // Remember which zones are currently expanded so we can restore after re-render
-    const expandedIds = new Set(
-      Array.from(container.querySelectorAll('.zone-card.expanded')).map(el => el.dataset.zoneId)
-    );
+    // expandedZoneIds is a module-level Set — persists across re-renders
 
     container.innerHTML = zones.map(z => {
       const pendingCount = (z.points || []).filter(p => p.status !== 'done').length;
       const totalCount = (z.points || []).length;
       const countLabel = totalCount > 0 ? `${pendingCount} pending` : '';
-      const isExpanded = expandedIds.has(z.id);
+      const isExpanded = expandedZoneIds.has(z.id);
 
       const pointsHtml = (z.points || []).map(p => `
         <div class="point-item${p.status === 'done' ? ' done' : ''}" data-point-id="${p.id}" data-zone-id="${z.id}">
           <span class="drag-handle" title="Drag to reorder">⠿</span>
           <input type="checkbox" class="point-check" data-point-id="${p.id}">
-          <span class="point-address">${escapeHtml(p.address)}</span>
+          <span class="point-address" data-point-id="${p.id}" data-zone-id="${z.id}" style="cursor:pointer">${escapeHtml(p.address)}</span>
           <button class="btn-point-done" data-point-id="${p.id}" data-zone-id="${z.id}" title="Mark delivered">✓</button>
           <button class="btn-point-remove" data-point-id="${p.id}" data-zone-id="${z.id}" title="Remove">✕</button>
         </div>
@@ -648,7 +685,8 @@
           ${z.notes ? `<div class="zone-notes-preview">${escapeHtml(z.notes)}</div>` : ''}
           <div class="point-list" data-point-list="${z.id}" style="display:${isExpanded ? 'block' : 'none'}">
             <div class="point-list-actions">
-              <button class="btn btn-sm btn-nav" data-zone-id="${z.id}">Navigate Selected</button>
+              <button class="btn btn-sm btn-nav" data-zone-id="${z.id}">Navigate</button>
+              <button class="btn btn-sm btn-mark-all-done" data-zone-id="${z.id}">All Done</button>
               <button class="btn btn-sm btn-clear-done" data-zone-id="${z.id}">Clear Done</button>
             </div>
             ${pointsHtml}
@@ -665,14 +703,22 @@
         const zoneId = card.dataset.zoneId;
         const zone = zones.find(z => z.id === zoneId);
 
-        // Focus the zone on the map
-        focusZone(zoneId);
+        // Focus zone on map (without closing drawer if we're about to expand points)
+        const hasPoints = zone && zone.points && zone.points.length > 0;
+        selectZone(zoneId);
+        if (isMobile && !hasPoints) setDrawerOpen(false);
 
         // Toggle expand if zone has points
-        if (zone && zone.points && zone.points.length > 0) {
+        if (hasPoints) {
+          const isNowExpanded = !expandedZoneIds.has(zoneId);
+          if (isNowExpanded) expandedZoneIds.add(zoneId);
+          else expandedZoneIds.delete(zoneId);
+          // renderZoneLists is NOT called here — directly update the DOM to avoid re-render race
+          card.classList.toggle('expanded', isNowExpanded);
           const pointList = card.querySelector('.point-list');
-          const isNowExpanded = card.classList.toggle('expanded');
           if (pointList) pointList.style.display = isNowExpanded ? 'block' : 'none';
+          // Show/hide point markers on map
+          showZonePointMarkers(isNowExpanded ? zoneId : null);
         }
       });
     });
@@ -773,6 +819,33 @@
       });
     });
 
+    // ── Batch mark all done ──────────────────────────────────────
+    container.querySelectorAll('.btn-mark-all-done').forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const zone = zones.find(z => z.id === this.dataset.zoneId);
+        if (!zone) return;
+        zone.points.forEach(p => { p.status = 'done'; });
+        saveState();
+        renderZoneLists();
+        toast('All points marked done', 'success');
+      });
+    });
+
+    // ── Address click: flyTo + show card ────────────────────────
+    container.querySelectorAll('.point-address').forEach(el => {
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const zone = zones.find(z => z.id === this.dataset.zoneId);
+        if (!zone) return;
+        const point = zone.points.find(p => p.id === this.dataset.pointId);
+        if (!point) return;
+        // Place marker and flyTo
+        placePin(point.address, point.lat, point.lng);
+        if (isMobile) setDrawerOpen(false);
+      });
+    });
+
     // ── SortableJS drag-to-reorder (zones) ─────────────────────
     createSortable(container, (evt) => {
       const newOrder = Array.from(container.querySelectorAll('.zone-card'))
@@ -792,7 +865,7 @@
           .map(el => el.dataset.pointId);
         zone.points.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
         saveState();
-      });
+      }, { filter: '.point-list-actions', preventOnFilter: true });
     });
     // ────────────────────────────────────────────────────────────
   }
