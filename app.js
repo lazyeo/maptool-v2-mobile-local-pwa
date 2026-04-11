@@ -593,7 +593,10 @@
         iconAnchor: [13, 13]
       });
       const marker = L.marker([p.lat, p.lng], { icon })
-        .bindTooltip(`${isDone ? '✓' : i + 1}. ${p.address}`, { direction: 'top', offset: [0, -16] });
+        .bindTooltip(
+          `${isDone ? '✓' : i + 1}. ${escapeHtml(p.address)}<br><span style="color:${isDone ? '#9a8b7d' : zone.color};font-weight:700">${isDone ? 'Done' : zone.name}</span>`,
+          { direction: 'top', offset: [0, -16], className: 'zone-tooltip' }
+        );
       // Click: show address card only (don't re-place search pin — avoids double bubble)
       marker.on('click', () => {
         const zone = zones.find(z => z.id === zoneId);
@@ -1069,13 +1072,21 @@
 
     markerLayer.clearLayers();
 
+    const markerLabel = zone
+      ? `${address}<br><span style="color:${zone.color};font-weight:700">${escapeHtml(zone.name)}</span>`
+      : `${escapeHtml(address)}<br><span style="color:#9a8b7d">Not in any zone</span>`;
+
     const marker = L.marker([lat, lng], { icon })
-      .bindPopup(`<b>${escapeHtml(address)}</b><br>${zone
-        ? '<span style="color:' + zone.color + ';font-weight:700">Zone: ' + escapeHtml(zone.name) + '</span>'
-        : '<span style="color:#9a8b7d">Not in any zone</span>'}`)
+      .bindTooltip(markerLabel, {
+        direction: 'top',
+        offset: [0, -44],
+        className: 'zone-tooltip',
+        permanent: false,
+        sticky: false
+      })
       .addTo(markerLayer);
 
-    marker.openPopup();
+    marker.openTooltip();
     map.setView([lat, lng], Math.max(map.getZoom(), 15));
 
     showAddressCard(address, lat, lng, zone);
