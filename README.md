@@ -7,72 +7,73 @@ A mobile-first Progressive Web App for drawing and managing custom geographic zo
 - **Interactive map** — Leaflet.js + OpenStreetMap tiles (no API key required)
 - **Draw zones** — tap or click to draw custom polygons on the map
 - **Edit zones** — drag the entire polygon to move it; drag individual vertices to reshape; rename, recolour, or delete
-- **Zone list** — drag-to-reorder with smooth animation (SortableJS); inline edit and delete
-- **Address search** — local-first fuzzy search against 16,507 Rolleston addresses (instant, offline-capable); Nominatim API fallback for addresses not in local DB
+- **Zone list** — drag-to-reorder with smooth animation (SortableJS); inline edit and delete (trash icon)
+- **Address search** — local-first fuzzy search against the checked-in `rolleston-addresses.json` array (**16,507** records in the current file); Nominatim API fallback for addresses not in local DB
 - **Zone detection** — automatically shows which zone a searched address belongs to
-- **Camera OCR** — use device camera to photograph a letterbox, street sign, or address label; Tesseract.js reads the text locally (no server or API) and presents recognised words as selectable tokens; tap tokens to build an address phrase and confirm to search
-- **PWA** — installable on Android / iOS; service worker for offline caching of app shell
+- **Address registration / point management** — searched addresses can be added into a zone, moved between zones, marked done/pending, reordered, and cleared when completed
+- **Camera OCR** — use device camera to photograph a letterbox, street sign, or address label; Tesseract.js reads the text locally (no server or API) and presents recognised lines as selectable tokens; confirm to push back into address search
+- **PWA** — installable on Android via Chrome install prompt; installable on iOS via Safari → Share → Add to Home Screen; service worker for offline caching of app shell
 
-## Quick Start
+## File structure
+
+| File | Description |
+|------|-------------|
+| `index.html` | App shell, meta tags, all script/style references |
+| `app.js` | All application logic |
+| `style.css` | All styles |
+| `sw.js` | Service worker — caches app shell for offline use |
+| `manifest.json` | PWA manifest (name, icons, display mode, theme colour) |
+| `rolleston-addresses.json` | Current local address dataset used by `loadAddressDB()` |
+| `ROLLESTON_DATA_REPORT.md` | Historical extraction notes + current-reality correction |
+
+## Running locally
 
 ```bash
 git clone https://github.com/lazyeo/maptool-v2-mobile-local-pwa.git
 cd maptool-v2-mobile-local-pwa
 python3 -m http.server 8765
-# Open http://localhost:8765
+# Open http://localhost:8765 in browser
 ```
 
-Any static file server works — `npx serve`, `php -S`, etc.
+## Mobile / real-device testing (HTTPS required)
 
-## Mobile / Real-Device Testing
-
-Camera access and PWA install prompts require HTTPS. Use Cloudflare Tunnel for a free temporary public URL:
+Camera access and PWA install prompts require a secure context (HTTPS). Use Cloudflare Tunnel for a free temporary public URL:
 
 ```bash
-brew install cloudflared   # or: npm i -g cloudflared
+brew install cloudflared
 cloudflared tunnel --url http://localhost:8765
 # Outputs a URL like: https://xxx.trycloudflare.com
 # Open that URL on your phone
 ```
 
-## iOS PWA Notes
+## iOS PWA notes
 
-- **Install:** Safari → Share → "Add to Home Screen"
-- iOS does not support `beforeinstallprompt` — no automatic install banner; users add manually via Safari
-- Safe-area insets are applied so the UI clears the notch and home indicator
+- **Install:** Safari → Share button → "Add to Home Screen"
+- iOS does **not** support the `beforeinstallprompt` event — there is no automatic install banner on iOS; users must add manually via Safari
+- Safe-area insets (`env(safe-area-inset-top/bottom)`) are applied so the UI clears the notch and home indicator bar correctly
+- Status bar style is set to `black-translucent` so the map extends under the status bar
 
-## Project Structure
-
-| File | Description |
-|------|-------------|
-| `index.html` | App shell, meta tags, script/style references |
-| `app.js` | Application logic (~1600 lines) |
-| `style.css` | All styles (~1400 lines) |
-| `sw.js` | Service worker — caches app shell for offline use |
-| `manifest.json` | PWA manifest (name, icons, display mode, theme colour) |
-| `rolleston-addresses.json` | 16,507 Rolleston addresses with lat/lon (3 MB, from OpenStreetMap) |
-| `rolleston-statistics.json` | Address statistics by street and suburb |
-| `process-rolleston-addresses.js` | Node.js script to re-extract addresses from Overpass API |
-| `ROLLESTON_DATA_REPORT.md` | Data extraction methodology and coverage report |
-
-## Tech Stack
+## Tech stack
 
 | Library | Purpose |
 |---------|---------|
 | [Leaflet.js](https://leafletjs.com/) | Map rendering |
-| [Leaflet.draw](https://leaflet.github.io/Leaflet.draw/) | Polygon drawing and vertex editing |
-| [SortableJS](https://sortablejs.github.io/Sortable/) | Drag-to-reorder zone list |
-| [Tesseract.js](https://tesseract.projectnaptha.com/) | Local OCR — runs in browser, no server needed |
-| OpenStreetMap / Nominatim | Map tiles and online geocoding (free, no API key) |
+| [Leaflet.draw](https://leaflet.github.io/Leaflet.draw/) | Polygon drawing & vertex editing |
+| [SortableJS](https://sortablejs.github.io/Sortable/) | Drag-to-reorder zone list and points |
+| [Tesseract.js](https://tesseract.projectnaptha.com/) | Local OCR — runs entirely in browser, no server needed |
+| OpenStreetMap / Nominatim | Map tiles and online address geocoding (free, no API key) |
 
-## Address Data
+## Address data reality check
 
-`rolleston-addresses.json` was extracted from OpenStreetMap via the Overpass API. It covers the Rolleston area, Selwyn District, Canterbury, NZ — including house numbers, street names, and coordinates. Run `process-rolleston-addresses.js` to refresh the data.
+The repo previously contained conflicting statements about the local data file. The current checked-in implementation is the source of truth:
 
-## Storage
+- `app.js -> loadAddressDB()` expects `rolleston-addresses.json` to be a **plain array**.
+- The current `rolleston-addresses.json` in this repo is indeed a plain array and currently contains **16,507** records.
+- Each record is shaped like the UI expects, with a `display` field plus address components and coordinates.
+- Older documentation in this repo that described a 47-record `{ metadata, addresses: [] }` envelope does **not** match the checked-in file actually used by the app.
 
-Zones are stored in `localStorage`. No backend, no sync, no account required.
+## Known limitations / backlog
 
-## License
-
-MIT
+- No multi-user / sync — zones are stored in `localStorage` only
+- Data pipeline provenance is not yet fully reconciled with the checked-in dataset
+- The app is still a single-file-heavy prototype (`app.js`), so UI, storage, search, OCR, and map editing remain tightly coupled
