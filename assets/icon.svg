@@ -1,0 +1,43 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="96" x2="908" y2="928" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FAF5EC"/>
+      <stop offset="1" stop-color="#E8DDD0"/>
+    </linearGradient>
+    <linearGradient id="pin" x1="512" y1="184" x2="512" y2="778" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5D4A36"/>
+      <stop offset="1" stop-color="#2E2117"/>
+    </linearGradient>
+    <linearGradient id="zoneStroke" x1="272" y1="688" x2="754" y2="540" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5D88FF"/>
+      <stop offset="1" stop-color="#6CC6A8"/>
+    </linearGradient>
+    <filter id="shadow" x="180" y="134" width="664" height="758" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="20"/>
+      <feGaussianBlur stdDeviation="24"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.180392 0 0 0 0 0.129412 0 0 0 0 0.0901961 0 0 0 0.18 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect x="64" y="64" width="896" height="896" rx="224" fill="url(#bg)"/>
+  <rect x="112" y="112" width="800" height="800" rx="184" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="12"/>
+
+  <path d="M280 694C332 644 394 620 470 618C551 616 620 647 738 615" stroke="url(#zoneStroke)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+  <circle cx="308" cy="676" r="24" fill="#5D88FF"/>
+  <circle cx="504" cy="618" r="20" fill="#6CC6A8"/>
+  <circle cx="734" cy="616" r="26" fill="#5D88FF"/>
+
+  <g filter="url(#shadow)">
+    <path d="M512 184C404.857 184 318 270.857 318 378C318 518.036 475.719 706.384 512 748C548.281 706.384 706 518.036 706 378C706 270.857 619.143 184 512 184Z" fill="url(#pin)"/>
+    <circle cx="512" cy="378" r="84" fill="#FFF9F0"/>
+    <path d="M451 386L492 345L536 373L580 330" stroke="#2E2117" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="451" cy="386" r="17" fill="#2E2117"/>
+    <circle cx="492" cy="345" r="17" fill="#2E2117"/>
+    <circle cx="536" cy="373" r="17" fill="#2E2117"/>
+    <circle cx="580" cy="330" r="17" fill="#2E2117"/>
+  </g>
+</svg>

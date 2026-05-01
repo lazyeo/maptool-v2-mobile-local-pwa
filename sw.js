@@ -1,10 +1,17 @@
-const CACHE_NAME = 'zone-planner-v2';
+const CACHE_NAME = 'zone-planner-v3';
 const APP_SHELL = [
   './',
   './index.html',
   './app.js',
   './style.css',
+  './manifest.json',
+  './default-zones.json',
   './rolleston-addresses.json',
+  './assets/icon.svg',
+  './assets/icon-192.png',
+  './assets/icon-512.png',
+  './assets/apple-touch-icon.png',
+  './assets/favicon-32.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css',

@@ -9,16 +9,16 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%23f3efe8'/%3E%3Cpath d='M256 80c-66.3 0-120 53.7-120 120 0 90 120 232 120 232s120-142 120-232c0-66.3-53.7-120-120-120zm0 163a43 43 0 110-86 43 43 0 010 86z' fill='%232e2117'/%3E%3C/svg%3E",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%23f3efe8'/%3E%3Cpath d='M96 30c-24.9 0-45 20.1-45 45 0 33.8 45 87 45 87s45-53.2 45-87c0-24.9-20.1-45-45-45zm0 61a16 16 0 110-32 16 16 0 010 32z' fill='%232e2117'/%3E%3C/svg%3E",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
