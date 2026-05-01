@@ -23,6 +23,7 @@ A mobile-first Progressive Web App for drawing and managing custom geographic zo
 | `style.css` | All styles |
 | `sw.js` | Service worker — caches app shell for offline use |
 | `manifest.json` | PWA manifest (name, icons, display mode, theme colour) |
+| `default-zones.json` | Default zone/point bootstrap config used when localStorage is empty |
 | `rolleston-addresses.json` | Current local address dataset used by `loadAddressDB()` |
 | `ROLLESTON_DATA_REPORT.md` | Historical extraction notes + current-reality correction |
 
@@ -74,6 +75,6 @@ The repo previously contained conflicting statements about the local data file. 
 
 ## Known limitations / backlog
 
-- No multi-user / sync — zones are stored in `localStorage` only
+- No multi-user / sync — zones are stored in `localStorage` only after initial bootstrap from `default-zones.json`
 - Data pipeline provenance is not yet fully reconciled with the checked-in dataset
 - The app is still a single-file-heavy prototype (`app.js`), so UI, storage, search, OCR, and map editing remain tightly coupled

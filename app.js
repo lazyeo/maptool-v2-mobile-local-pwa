@@ -11,6 +11,7 @@
   ];
 
   const STORAGE_KEY = 'nz-zone-planner-v2';
+  const DEFAULT_ZONES_URL = './default-zones.json';
   const ROLLESTON_CENTER = [-43.591, 172.379];
 
   // ════════════════════════════════════════════════
@@ -1535,70 +1536,37 @@
   // ════════════════════════════════════════════════
   //  DEMO DATA
   // ════════════════════════════════════════════════
-  function loadDemoData() {
-    const demoZones = [
-      {
-        id: 'demo-rolleston-north',
-        name: 'Rolleston North',
-        notes: '',
-        color: '#4361ee',
-        latlngs: [
-          [-43.5755, 172.3580],
-          [-43.5755, 172.3900],
-          [-43.5870, 172.3900],
-          [-43.5870, 172.3580]
-        ],
-        points: []
-      },
-      {
-        id: 'demo-rolleston-south',
-        name: 'Rolleston South',
-        notes: '',
-        color: '#06d6a0',
-        latlngs: [
-          [-43.5920, 172.3580],
-          [-43.5920, 172.3850],
-          [-43.6050, 172.3850],
-          [-43.6050, 172.3580]
-        ],
-        points: []
-      },
-      {
-        id: 'demo-faringdon',
-        name: 'Faringdon',
-        notes: '',
-        color: '#ffd166',
-        latlngs: [
-          [-43.5870, 172.3620],
-          [-43.5870, 172.3790],
-          [-43.5920, 172.3790],
-          [-43.5920, 172.3620]
-        ],
-        points: []
-      },
-      {
-        id: 'demo-izone',
-        name: 'Izone Business Park',
-        notes: '',
-        color: '#cc5de8',
-        latlngs: [
-          [-43.5830, 172.3900],
-          [-43.5830, 172.4080],
-          [-43.5960, 172.4080],
-          [-43.5960, 172.3900]
-        ],
-        points: []
+  async function loadDemoData() {
+    let demoZones = [];
+
+    try {
+      const response = await fetch(DEFAULT_ZONES_URL, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
-    ];
+      const payload = await response.json();
+      if (!payload || !Array.isArray(payload.zones)) {
+        throw new Error('Missing zones array in default-zones.json');
+      }
+      demoZones = payload.zones;
+    } catch (error) {
+      console.error('Failed to load default zones config', error);
+      toast('Failed to load default zones config', 'error');
+      return;
+    }
 
     demoZones.forEach(z => {
-      zones.push(z);
-      addZoneToMap(z);
+      zones.push({
+        notes: '',
+        points: [],
+        ...z,
+        points: Array.isArray(z.points) ? z.points : []
+      });
+      addZoneToMap(zones[zones.length - 1]);
     });
 
     colorIndex = demoZones.length;
     saveState();
-    renderZoneLists();
   }
 
   // ════════════════════════════════════════════════
@@ -1936,16 +1904,19 @@
   // ════════════════════════════════════════════════
   //  INIT
   // ════════════════════════════════════════════════
-  loadAddressDB();
-  const hasState = loadState();
+  async function initApp() {
+    loadAddressDB();
+    const hasState = loadState();
 
-  if (!hasState || zones.length === 0) {
-    loadDemoData();
+    if (!hasState || zones.length === 0) {
+      await loadDemoData();
+    }
+
+    renderZoneLists();
+    setTimeout(() => map.invalidateSize(), 100);
   }
 
-  renderZoneLists();
-
-  setTimeout(() => map.invalidateSize(), 100);
+  initApp();
 
   // Click on map to deselect zone
   map.on('click', function () {
