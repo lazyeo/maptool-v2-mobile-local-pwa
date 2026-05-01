@@ -1442,6 +1442,71 @@
   });
 
   // ════════════════════════════════════════════════
+  //  CONFIRM DIALOG
+  // ════════════════════════════════════════════════
+  const confirmOverlay = document.getElementById('confirm-overlay');
+  const confirmTitle = document.getElementById('confirm-title');
+  const confirmMessage = document.getElementById('confirm-message');
+  const confirmCancel = document.getElementById('confirm-cancel');
+  const confirmAccept = document.getElementById('confirm-accept');
+
+  let confirmAction = null;
+
+  function closeConfirmDialog() {
+    confirmOverlay.classList.remove('active');
+    confirmAccept.disabled = false;
+    confirmCancel.disabled = false;
+    confirmAccept.className = 'btn btn-primary';
+    confirmAccept.textContent = 'Continue';
+    confirmAction = null;
+  }
+
+  function openConfirmDialog(options) {
+    const {
+      title = 'Confirm action',
+      message = 'Are you sure you want to continue?',
+      confirmLabel = 'Continue',
+      confirmClassName = 'btn btn-primary',
+      onConfirm = null
+    } = options || {};
+
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    confirmAccept.textContent = confirmLabel;
+    confirmAccept.className = confirmClassName;
+    confirmAction = onConfirm;
+    confirmOverlay.classList.add('active');
+    setTimeout(() => confirmAccept.focus(), 50);
+  }
+
+  confirmCancel.addEventListener('click', closeConfirmDialog);
+  confirmOverlay.addEventListener('click', function (e) {
+    if (e.target === confirmOverlay) closeConfirmDialog();
+  });
+
+  confirmAccept.addEventListener('click', async function () {
+    if (!confirmAction) {
+      closeConfirmDialog();
+      return;
+    }
+
+    const action = confirmAction;
+    confirmAccept.disabled = true;
+    confirmCancel.disabled = true;
+
+    try {
+      await action();
+    } finally {
+      closeConfirmDialog();
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (!confirmOverlay.classList.contains('active')) return;
+    if (e.key === 'Escape') closeConfirmDialog();
+  });
+
+  // ════════════════════════════════════════════════
   //  EXPORT / IMPORT
   // ════════════════════════════════════════════════
   function exportZones() {
@@ -1494,18 +1559,60 @@
     input.click();
   }
 
-  function clearAll() {
-    if (!confirm('Clear all zones and markers? This cannot be undone.')) return;
+  function clearZonesState() {
     zones = [];
     colorIndex = 0;
     selectedZoneId = null;
+    expandedZoneIds.clear();
     drawnItems.clearLayers();
     markerLayer.clearLayers();
+    pointMarkersLayer.clearLayers();
     document.getElementById('zone-result-banner').style.display = 'none';
     hideAddressCard();
+
+    if (editModeActive) {
+      editModeActive = false;
+      disableEditMode();
+      fabEdit.classList.remove('active');
+      fabEdit.textContent = 'Edit';
+    }
+  }
+
+  async function resetZones() {
+    const demoZones = await fetchDefaultZones();
+    if (!demoZones) return;
+
+    clearZonesState();
+    applyDefaultZones(demoZones);
+    renderZoneLists();
+    toast('Default zones restored', 'success');
+  }
+
+  function clearAllNow() {
+    clearZonesState();
     saveState();
     renderZoneLists();
     toast('All zones cleared', 'warning');
+  }
+
+  function resetZonesWithConfirm() {
+    openConfirmDialog({
+      title: 'Reset zones?',
+      message: 'This will replace your current zones with the default set.',
+      confirmLabel: 'Reset',
+      confirmClassName: 'btn btn-primary',
+      onConfirm: resetZones
+    });
+  }
+
+  function clearAll() {
+    openConfirmDialog({
+      title: 'Clear all zones?',
+      message: 'This will remove all current zones and markers from this device.',
+      confirmLabel: 'Clear All',
+      confirmClassName: 'btn btn-danger',
+      onConfirm: clearAllNow
+    });
   }
 
   // ════════════════════════════════════════════════
@@ -1536,9 +1643,7 @@
   // ════════════════════════════════════════════════
   //  DEMO DATA
   // ════════════════════════════════════════════════
-  async function loadDemoData() {
-    let demoZones = [];
-
+  async function fetchDefaultZones() {
     try {
       const response = await fetch(DEFAULT_ZONES_URL, { cache: 'no-store' });
       if (!response.ok) {
@@ -1548,13 +1653,15 @@
       if (!payload || !Array.isArray(payload.zones)) {
         throw new Error('Missing zones array in default-zones.json');
       }
-      demoZones = payload.zones;
+      return payload.zones;
     } catch (error) {
       console.error('Failed to load default zones config', error);
       toast('Failed to load default zones config', 'error');
-      return;
+      return null;
     }
+  }
 
+  function applyDefaultZones(demoZones) {
     demoZones.forEach(z => {
       zones.push({
         notes: '',
@@ -1567,6 +1674,16 @@
 
     colorIndex = demoZones.length;
     saveState();
+  }
+
+  async function loadDemoData() {
+    const demoZones = await fetchDefaultZones();
+    if (!demoZones) {
+      return false;
+    }
+
+    applyDefaultZones(demoZones);
+    return true;
   }
 
   // ════════════════════════════════════════════════
@@ -1649,11 +1766,13 @@
   // Button wiring (desktop)
   document.getElementById('btn-export').addEventListener('click', exportZones);
   document.getElementById('btn-import').addEventListener('click', importZones);
+  document.getElementById('btn-reset').addEventListener('click', resetZonesWithConfirm);
   document.getElementById('btn-clear').addEventListener('click', clearAll);
 
   // Button wiring (mobile)
   document.getElementById('btn-export-mobile').addEventListener('click', exportZones);
   document.getElementById('btn-import-mobile').addEventListener('click', importZones);
+  document.getElementById('btn-reset-mobile').addEventListener('click', resetZonesWithConfirm);
   document.getElementById('btn-clear-mobile').addEventListener('click', clearAll);
 
   // ════════════════════════════════════════════════

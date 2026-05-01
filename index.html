@@ -88,6 +88,7 @@
   <div id="sidebar-footer">
     <button class="btn" id="btn-export">Export</button>
     <button class="btn" id="btn-import">Import</button>
+    <button class="btn" id="btn-reset">Reset</button>
     <button class="btn btn-danger" id="btn-clear">Clear All</button>
   </div>
 </aside>
@@ -103,6 +104,7 @@
     <div id="zone-list-mobile"></div>
     <div class="drawer-footer-actions">
       <button class="btn" id="btn-import-mobile">Import</button>
+      <button class="btn" id="btn-reset-mobile">Reset</button>
       <button class="btn btn-danger" id="btn-clear-mobile">Clear All</button>
     </div>
   </div>
@@ -151,6 +153,18 @@
     <div id="edit-sheet-actions">
       <button id="edit-sheet-cancel" class="btn">Cancel</button>
       <button id="edit-sheet-confirm" class="btn btn-primary">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm dialog overlay -->
+<div id="confirm-overlay">
+  <div id="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+    <h3 id="confirm-title">Confirm action</h3>
+    <p id="confirm-message">Are you sure you want to continue?</p>
+    <div id="confirm-actions">
+      <button id="confirm-cancel" class="btn">Cancel</button>
+      <button id="confirm-accept" class="btn btn-primary">Continue</button>
     </div>
   </div>
 </div>
